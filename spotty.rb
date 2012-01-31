@@ -269,7 +269,7 @@ end
 case ARGV[0]
 when "play"
   if ARGV[1] && ARGV[1] == "-s"
-    Spotify.search(ARGV.drop(3).join(" "), false)
+    Spotify.search(ARGV.drop(2).join(" "), false)
     Spotify.play_saved_item(0)
   else
     Spotify.play
@@ -291,7 +291,7 @@ when "nowplaying", "np"
   name, artist = Spotify.now_playing
   puts "Currently playing " + name.blue + " by " + artist.red
 when "search", "s"
-  Spotify.search(ARGV.drop(1).join(" ")) if ARGV[0] == "search"
+  Spotify.search(ARGV.drop(1).join(" "), true) if ARGV[0] == "search"
 when "playsaved", "ps"
   Spotify.play_saved_item(ARGV[1].to_i)
 else
