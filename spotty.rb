@@ -4,7 +4,7 @@
 module Spotify
   
   def Spotify.do_something(something)
-    `osascript -e 'tell application \"Spotify\" to #{something}'`
+    `osascript -e 'tell application \"Spotify\" to #{something}'`.gsub("\n", "")
   end
   
   def Spotify.get_something(something)
@@ -15,6 +15,14 @@ module Spotify
     Spotify.get_something("player state") == "playing"
   end
   
+  def Spotify.paused?()
+    Spotify.get_something("player state") == "paused"
+  end
+  
+  def Spotify.stopped?()
+    Spotify.get_something("player state") == "stopped"
+  end
+  
   def Spotify.play()
     Spotify.do_something("play")
   end
@@ -22,7 +30,7 @@ module Spotify
   def Spotify.pause()
     Spotify.do_something("pause")
   end
-  
+
   def Spotify.toggle_playing()
     Spotify.do_something("playpause")
   end
@@ -33,6 +41,13 @@ module Spotify
   
   def Spotify.previous()
     Spotify.do_something("play previous track")
+  end
+  
+  def Spotify.song_position()
+    current = Spotify.get_something("player position").to_i
+    total = Spotify.get_something("duration of current track").to_i
+    
+    puts "#{current}/#{total}"
   end
   
   def Spotify.now_playing()
@@ -79,6 +94,8 @@ ARGV.each do |arg|
   when "playing?", "p?"
     puts "Spotify is playing right now." if Spotify.playing?
     puts "Nope, Spotify ain't playing." if not Spotify.playing?
+  when "songposition", "sp"
+    Spotify.song_position
   when "nowplaying", "np"
     name, artist = Spotify.now_playing
     puts "Currently playing " + name + " by " + artist
