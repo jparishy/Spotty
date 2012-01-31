@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 # encoding: UTF-8
 
+require 'rubygems'
+require 'meta-spotify'
+require 'colorize'
+
 module Spotify
   
   #
@@ -157,6 +161,77 @@ module Spotify
     return name, artist
   end
   
+  #
+  # Spotify.search
+  #
+  # Search Spotify for music.
+  #
+  # Performs a search and saves at most 5 (for now) results from each category
+  # to a temporary file (~/.spotty.ss) for later recollection in Spotify.play_saved_item.
+  #
+  # This allows the user to search and play songs from the command line.
+  #
+  def Spotify.search(term, print_results = true)
+    
+    tracks = MetaSpotify::Track.search(term)[:tracks]
+    artists = MetaSpotify::Artist.search(term)[:artists]
+    albums = MetaSpotify::Album.search(term)[:albums]
+    
+    tracks = tracks.take 5 if tracks
+    artists = artists.take 5 if artists
+    albums = albums.take 5 if albums
+    
+    play_index = 0
+    
+    saved_search_file = File.open(File.expand_path("~/.spotty.ss"), File::CREAT|File::TRUNC|File::WRONLY)
+    
+    tracks.each do |track|
+      puts "[##{play_index}] Track: #{track.name.blue} by #{track.artists.first.name.red}" if print_results
+      saved_search_file.write "[#{play_index}] " + track.uri + "\n" if saved_search_file
+      play_index += 1
+    end
+    
+    artists.each do |artist|
+      puts "[##{play_index}] Artist: #{artist.name.red}" if print_results
+      saved_search_file.write "[#{play_index}] " + artist.uri + "\n" if saved_search_file
+      play_index += 1
+    end
+    
+    albums.each do |album|
+      puts "[##{play_index}] Album: #{album.name.blue} by #{album.artists.first.name.red}" if print_results
+      saved_search_file.write "[#{play_index}] " + album.uri + "\n" if saved_search_file
+      play_index += 1
+    end
+    
+    saved_search_file.close
+  end
+  
+  def Spotify.uri_type(link)
+    link.split(":")[1]
+  end
+  
+  def Spotify.play_saved_item(item_number)
+    saved_search_file = File.open(File.expand_path("~/.spotty.ss"), File::RDONLY)
+    if saved_search_file
+      contents = saved_search_file.read
+      uri = contents.split("\n")[item_number].split(" ")[1]
+      
+      case Spotify.uri_type(uri)
+      when "track"
+        Spotify.do_something "play track \"#{uri}\""
+        
+        name, artist = Spotify.now_playing
+        puts "Currently playing " + name.blue + " by " + artist.red
+      when "artist"
+        puts "Queing songs from saved artist."
+      when "album"
+        puts "Queing saved album."
+      end
+      
+      saved_search_file.close
+    end
+  end
+  
 end
 
 #
@@ -190,27 +265,35 @@ end
 # perform each operation sequentially. This can be fancied up to support
 # arguments in the future.
 #
-ARGV.each do |arg|
-  case arg
-  when "play"
-    Spotify.play
-  when "pause"
-    Spotify.pause
-  when "toggleplaying", "playpause", "tp", "pp"
-    Spotify.toggle_playing
-  when "next"
-    Spotify.next
-  when "previous", "prev"
-    Spotify.previous
-  when "playing?", "p?"
-    puts "Spotify is playing right now." if Spotify.playing?
-    puts "Nope, Spotify ain't playing." if not Spotify.playing?
-  when "songposition", "sp"
-    Spotify.song_position
-  when "nowplaying", "np"
-    name, artist = Spotify.now_playing
-    puts "Currently playing " + name + " by " + artist
+
+case ARGV[0]
+when "play"
+  if ARGV[1] && ARGV[1] == "-s"
+    Spotify.search(ARGV.drop(3).join(" "), false)
+    Spotify.play_saved_item(0)
   else
-    print_help
+    Spotify.play
   end
+when "pause"
+  Spotify.pause
+when "toggleplaying", "playpause", "tp", "pp"
+  Spotify.toggle_playing
+when "next"
+  Spotify.next
+when "previous", "prev"
+  Spotify.previous
+when "playing?", "p?"
+  puts "Spotify is playing right now." if Spotify.playing?
+  puts "Nope, Spotify ain't playing." if not Spotify.playing?
+when "songposition", "sp"
+  Spotify.song_position
+when "nowplaying", "np"
+  name, artist = Spotify.now_playing
+  puts "Currently playing " + name.blue + " by " + artist.red
+when "search", "s"
+  Spotify.search(ARGV.drop(1).join(" ")) if ARGV[0] == "search"
+when "playsaved", "ps"
+  Spotify.play_saved_item(ARGV[1].to_i)
+else
+  print_help
 end
