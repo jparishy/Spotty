@@ -31,7 +31,7 @@ Hooray! You skipped the song!
 * nowplaying - Print the currently playing song.
 	* Format: <song name> by <song artist>
 	* Aliases: np
-*help - Print the help page.
+* help - Print the help page.
 
 More to come! I promise! This is just an hour or so worth of hacking, I'll make it more useful inbetween
 compiles of my larger C-based projects. Damn GCC.
